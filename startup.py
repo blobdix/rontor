@@ -27,7 +27,8 @@ except IOError as e:
 
 # Caddyサービスを有効化して起動
 try:
-    run_command("systemctl enable caddy --now")
+    run_command("systemctl enable caddy")
+    run_command("systemctl restart caddy")
 except Exception as e:
     logging.error(f"Failed to enable and start Caddy service: {str(e)}")
     raise
@@ -66,7 +67,8 @@ except Exception as e:
 # 各サイトに対してサービスをenable --now
 for site in sites:
     try:
-        run_command(f"systemctl enable rontor-site@{site}.service --now")
+        run_command(f"systemctl enable rontor-site@{site}.service")
+        run_command(f"systemctl restart rontor-site@{site}.service")
         logging.info(f"Service for {site} enabled and started")
     except Exception as e:
         logging.error(f"Failed to enable and start service for {site}: {str(e)}")
