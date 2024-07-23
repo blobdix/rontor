@@ -70,6 +70,24 @@ def associate_elastic_ip(ec2_client, instance_id, elastic_ip):
             logging.info(f"Elastic IP {elastic_ip} is already associated with an instance")
     retry_operation(_associate)
 
+def associate_ipv6_address(ec2_client, instance_id, ipv6_address):
+    def _associate():
+        network_interfaces = ec2_client.describe_network_interfaces(
+            Filters=[{'Name': 'attachment.instance-id', 'Values': [instance_id]}]
+        )['NetworkInterfaces']
+        
+        if network_interfaces:
+            network_interface_id = network_interfaces[0]['NetworkInterfaceId']
+            ec2_client.assign_ipv6_addresses(
+                NetworkInterfaceId=network_interface_id,
+                Ipv6Addresses=[ipv6_address]
+            )
+            logging.info(f"IPv6 address {ipv6_address} associated with instance {instance_id}")
+        else:
+            logging.error(f"No network interface found for instance {instance_id}")
+    
+    retry_operation(_associate)
+
 def attach_ebs_volume(ec2_client, instance_id, volume_id):
     def _attach():
         response = ec2_client.describe_volumes(VolumeIds=[volume_id])
@@ -173,6 +191,12 @@ def main():
 
         associate_elastic_ip(ec2_client, instance_id, elastic_ip)
         attach_ebs_volume(ec2_client, instance_id, ebs_volume_id)
+
+        ipv6_address = tags.get('IPv6Address')
+        if ipv6_address:
+            associate_ipv6_address(ec2_client, instance_id, ipv6_address)
+        else:
+            logging.warning("No IPv6 address specified in instance tags")
 
         mount_zfs_dataset()
 
