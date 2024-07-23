@@ -1,0 +1,13 @@
+[Unit]
+Description=Service for %i
+Requires=docker.service
+After=docker.service
+
+[Service]
+ExecStart=/usr/bin/python3 /rontor/main/site-ctl.py %i start
+ExecStop=/usr/bin/python3 /rontor/main/site-ctl.py %i stop
+ExecReload=/usr/bin/python3 /rontor/main/site-ctl.py %i reload
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
