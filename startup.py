@@ -68,7 +68,7 @@ except Exception as e:
 for site in sites:
     try:
         run_command(f"systemctl enable rontor-site@{site}.service")
-        run_command(f"systemctl restart rontor-site@{site}.service")
+        run_command(f"systemctl reload-or-restart rontor-site@{site}.service")
         logging.info(f"Service for {site} enabled and started")
     except Exception as e:
         logging.error(f"Failed to enable and start service for {site}: {str(e)}")
