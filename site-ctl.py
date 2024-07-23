@@ -24,7 +24,7 @@ def main(site, operation):
 
         # 操作に基づいてコマンドを実行
         if operation == "start":
-            run_command("docker compose up -d")
+            run_command("docker compose up")
         elif operation == "stop":
             run_command("docker compose stop")
         elif operation == "reload":
