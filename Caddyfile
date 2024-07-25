@@ -2,6 +2,12 @@ blobdix.org {
     root * /rontor/main/org.blobdix-static
     file_server
 
+    # Logging
+    log {
+        output file /rontor/main/logs/caddy/blobdix.org/access.log
+        format json
+    }
+
     # Redirect HTTP to HTTPS
     @http {
         protocol http
@@ -17,6 +23,12 @@ blobdix.org {
 alpha-carinae.org {
     root * /rontor/main/org.blobdix-static
     file_server
+
+    # Logging
+    log {
+        output file /rontor/main/logs/caddy/alpha-carinae.org/access.log
+        format json
+    }
 
     # Redirect HTTP to HTTPS
     @http {
@@ -37,6 +49,12 @@ mattermost.alpha-carinae.org {
         protocol http
     }
     redir @http https://{host}{uri}
+
+    # Logging
+    log {
+        output file /rontor/main/logs/caddy/mattermost.alpha-carinae.org/access.log
+        format json
+    }
 
     # Use Let's Encrypt for HTTPS
     tls {
@@ -78,4 +96,3 @@ mattermost.alpha-carinae.org {
         }
     }
 }
-
