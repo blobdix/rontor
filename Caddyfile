@@ -1,22 +1,28 @@
 blobdix.org {
-    root * /rontor/main/org.blobdix-static
-    file_server
-
-    # Logging
-    log {
-        output file /rontor/main/logs/caddy/blobdix.org/access.log
-        format json
-    }
-
     # Redirect HTTP to HTTPS
     @http {
         protocol http
     }
     redir @http https://{host}{uri}
-
+    # Logging
+    log {
+        output file /rontor/main/logs/caddy/blobdix.org/access.log
+        format json
+    }
     # Use Let's Encrypt for HTTPS
     tls {
         issuer acme
+    }
+    # General reverse proxy configuration
+    reverse_proxy localhost:19100 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Frame-Options SAMEORIGIN
+        transport http {
+            versions 1.1
+        }
     }
 }
 
