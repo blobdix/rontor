@@ -1,0 +1,81 @@
+blobdix.org {
+    root * /rontor/main/org.blobdix-static
+    file_server
+
+    # Redirect HTTP to HTTPS
+    @http {
+        protocol http
+    }
+    redir @http https://{host}{uri}
+
+    # Use Let's Encrypt for HTTPS
+    tls {
+        issuer acme
+    }
+}
+
+alpha-carinae.org {
+    root * /rontor/main/org.blobdix-static
+    file_server
+
+    # Redirect HTTP to HTTPS
+    @http {
+        protocol http
+    }
+    redir @http https://{host}{uri}
+
+    # Use Let's Encrypt for HTTPS
+    tls {
+        issuer acme
+    }
+}
+
+# Configuration for Mattermost
+mattermost.alpha-carinae.org {
+    # Redirect HTTP to HTTPS
+    @http {
+        protocol http
+    }
+    redir @http https://{host}{uri}
+
+    # Use Let's Encrypt for HTTPS
+    tls {
+        issuer acme
+    }
+
+    # WebSocket specific configuration
+    @websocket {
+        path_regexp websocket ^/api/v[0-9]+/(users/)?websocket$
+    }
+    reverse_proxy @websocket localhost:18065 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Frame-Options SAMEORIGIN
+        header_up Upgrade {http.request.header.Upgrade}
+        header_up Connection {http.request.header.Connection}
+        #header_up Access-Control-Allow-Origin *
+        #header_up Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        #header_up Access-Control-Allow-Headers "Origin, Content-Type, X-Auth-Token"
+        transport http {
+            versions 1.1
+        }
+    }
+
+    # General reverse proxy configuration
+    reverse_proxy localhost:18065 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Frame-Options SAMEORIGIN
+        #header_up Access-Control-Allow-Origin *
+        #header_up Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        #header_up Access-Control-Allow-Headers "Origin, Content-Type, X-Auth-Token"
+        transport http {
+            versions 1.1
+        }
+    }
+}
+
