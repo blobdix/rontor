@@ -152,7 +152,7 @@ def run_startup_script():
 
 def setup_system():
     run_command("apt update")
-    run_command("apt install -y zfsutils-linux docker.io docker-compose-v2 caddy python3-boto3 python3-requests")
+    run_command("apt install -y zfsutils-linux docker.io docker-compose-v2 caddy python3-boto3 python3-requests zsh rclone")
     logging.info("System packages installed")
 
 def main():
