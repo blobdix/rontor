@@ -1,3 +1,9 @@
+balux.org {
+    tls {
+        issuer acme
+    }
+    redir https://blobdix.org{uri}
+}
 blobdix.org {
     # Redirect HTTP to HTTPS
     @http {
