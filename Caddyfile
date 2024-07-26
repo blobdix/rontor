@@ -7,7 +7,7 @@ blobdix.org {
     # Logging
     log {
         output file /rontor/main/logs/caddy/blobdix.org/access.log
-        format json
+        format console
     }
     # Use Let's Encrypt for HTTPS
     tls {
@@ -15,11 +15,6 @@ blobdix.org {
     }
     # General reverse proxy configuration
     reverse_proxy localhost:19100 {
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-        header_up X-Frame-Options SAMEORIGIN
         transport http {
             versions 1.1
         }
