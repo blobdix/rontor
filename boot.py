@@ -128,23 +128,26 @@ def mount_zfs_dataset():
         except subprocess.CalledProcessError as e:
             logging.warning(f"Failed to check if ZFS dataset {dataset} is mounted: {e.stderr.decode('utf-8')}")
             return False  # エラーの場合はマウントされていないものとして扱う
+    datasets = ["rontor/main", "rontor/docker"]
+    all_mounted = all(is_zfs_mounted(dataset) for dataset in datasets)
 
-    dataset = "rontor/main"
-    if not is_zfs_mounted(dataset):
-        logging.info(f"ZFS dataset {dataset} is not mounted. Attempting to import the pool.")
-        try:
-            retry_operation(lambda: run_command("zpool import -f rontor"))
-            logging.info("ZFS pool 'rontor' imported successfully")
-        except Exception as e:
-            logging.error(f"Failed to import ZFS pool 'rontor': {str(e)}")
-        
-        # プールのインポート後、再度マウント状態を確認
+    if all_mounted:
+        logging.info("All ZFS datasets are already mounted")
+        return
+
+    try:
+        retry_operation(lambda: run_command("zpool import -f rontor"))
+        logging.info("ZFS pool 'rontor' imported successfully")
+    except Exception as e:
+        logging.error(f"Failed to import ZFS pool 'rontor': {str(e)}")
+        raise
+
+    # プールのインポート後、再度マウント状態を確認
+    for dataset in datasets:
         if is_zfs_mounted(dataset):
             logging.info(f"ZFS dataset {dataset} is now mounted after pool import")
         else:
             logging.warning(f"ZFS dataset {dataset} is still not mounted after pool import")
-    else:
-        logging.info(f"ZFS dataset {dataset} is already mounted")
 
 def run_startup_script():
     retry_operation(lambda: run_command("python3 /rontor/main/startup.py"))
