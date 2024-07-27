@@ -77,7 +77,16 @@ def associate_ipv6_address(ec2_client, instance_id, ipv6_address):
         )['NetworkInterfaces']
         
         if network_interfaces:
-            network_interface_id = network_interfaces[0]['NetworkInterfaceId']
+            network_interface = network_interfaces[0]
+            network_interface_id = network_interface['NetworkInterfaceId']
+            
+            # 既存のIPv6アドレスをチェック
+            existing_ipv6 = [addr['Ipv6Address'] for addr in network_interface.get('Ipv6Addresses', [])]
+            
+            if ipv6_address in existing_ipv6:
+                logging.info(f"IPv6 address {ipv6_address} is already associated with instance {instance_id}")
+                return
+            
             ec2_client.assign_ipv6_addresses(
                 NetworkInterfaceId=network_interface_id,
                 Ipv6Addresses=[ipv6_address]
