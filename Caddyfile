@@ -34,7 +34,7 @@ alpha-carinae.org {
     # Logging
     log {
         output file /rontor/main/logs/caddy/alpha-carinae.org/access.log
-        format json
+        format console
     }
 
     # Redirect HTTP to HTTPS
@@ -60,7 +60,7 @@ mattermost.alpha-carinae.org {
     # Logging
     log {
         output file /rontor/main/logs/caddy/mattermost.alpha-carinae.org/access.log
-        format json
+        format console
     }
 
     # Use Let's Encrypt for HTTPS
