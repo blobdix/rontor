@@ -197,6 +197,55 @@ def setup_system():
     run_command("apt install -y zfsutils-linux caddy python3-boto3 python3-requests zsh rclone")
     logging.info("System packages installed")
 
+def is_disk_initialized(device):
+    try:
+        result = subprocess.run(["sudo", "blkid", device], capture_output=True, text=True)
+        return result.returncode == 0
+    except subprocess.CalledProcessError:
+        return False
+
+def setup_instance_store_swap():
+    try:
+        # インスタンスストアのデバイス名を取得（通常は /dev/nvme1n1 または /dev/xvdb）
+        result = subprocess.run(["lsblk", "-ndo", "NAME,TYPE"], capture_output=True, text=True)
+        instance_store = None
+        for line in result.stdout.splitlines():
+            if "disk" in line and ("nvme1n1" in line or "xvdb" in line):
+                instance_store = "/dev/" + line.split()[0]
+                break
+
+        if not instance_store:
+            logging.info("No instance store device found. Skipping swap setup.")
+            return
+
+        # デバイスが既にマウントされていないか確認
+        result = subprocess.run(["mount"], capture_output=True, text=True)
+        if instance_store in result.stdout:
+            logging.info(f"Instance store {instance_store} is already mounted. Skipping swap setup.")
+            return
+
+        # ディスクが初期化されているか確認
+        if is_disk_initialized(instance_store):
+            logging.warning(f"Instance store {instance_store} is already initialized. Skipping swap setup.")
+            return
+
+        # スワップとして初期化
+        subprocess.run(["sudo", "mkswap", instance_store], check=True)
+        
+        # スワップをオンにする
+        subprocess.run(["sudo", "swapon", instance_store], check=True)
+        
+        # /etc/fstabに追加して永続化
+        with open("/etc/fstab", "a") as fstab:
+            fstab.write(f"\n{instance_store} none swap sw 0 0\n")
+        
+        logging.info(f"Instance store {instance_store} has been set up as swap.")
+
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error setting up instance store as swap: {str(e)}")
+    except Exception as e:
+        logging.error(f"Unexpected error in setup_instance_store_swap: {str(e)}")
+
 def main():
     try:
         # システムパッケージのインストール
@@ -216,6 +265,8 @@ def main():
         tmp_log_file = get_log_file_name(instance_id, '/tmp')
         setup_logging(tmp_log_file)
         logging.info("Starting user data script")
+
+        setup_instance_store_swap()
 
         # インスタンスが動作しているアベイラビリティゾーンの取得
         az = get_instance_metadata('placement/availability-zone', token)
