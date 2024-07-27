@@ -70,6 +70,11 @@ def associate_elastic_ip(ec2_client, instance_id, elastic_ip):
             logging.info(f"Elastic IP {elastic_ip} is already associated with an instance")
     retry_operation(_associate)
 
+import ipaddress
+
+def normalize_ipv6(address):
+    return str(ipaddress.IPv6Address(address).exploded)
+
 def associate_ipv6_address(ec2_client, instance_id, ipv6_address):
     def _associate():
         network_interfaces = ec2_client.describe_network_interfaces(
@@ -80,10 +85,13 @@ def associate_ipv6_address(ec2_client, instance_id, ipv6_address):
             network_interface = network_interfaces[0]
             network_interface_id = network_interface['NetworkInterfaceId']
             
-            # 既存のIPv6アドレスをチェック
-            existing_ipv6 = [addr['Ipv6Address'] for addr in network_interface.get('Ipv6Addresses', [])]
+            # 既存のIPv6アドレスを正規化
+            existing_ipv6 = [normalize_ipv6(addr['Ipv6Address']) for addr in network_interface.get('Ipv6Addresses', [])]
             
-            if ipv6_address in existing_ipv6:
+            # 指定されたIPv6アドレスを正規化
+            normalized_ipv6_address = normalize_ipv6(ipv6_address)
+            
+            if normalized_ipv6_address in existing_ipv6:
                 logging.info(f"IPv6 address {ipv6_address} is already associated with instance {instance_id}")
                 return
             
