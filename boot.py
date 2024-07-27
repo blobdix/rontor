@@ -136,26 +136,48 @@ def mount_zfs_dataset():
         return
 
     try:
+        # ZFS プールをインポート
         retry_operation(lambda: run_command("zpool import -f rontor"))
         logging.info("ZFS pool 'rontor' imported successfully")
     except Exception as e:
         logging.error(f"Failed to import ZFS pool 'rontor': {str(e)}")
         raise
 
-    # プールのインポート後、再度マウント状態を確認
+    # インポート後にマウント状態を再確認
     for dataset in datasets:
         if is_zfs_mounted(dataset):
-            logging.info(f"ZFS dataset {dataset} is now mounted after pool import")
+            logging.info(f"ZFS dataset {dataset} is mounted")
         else:
-            logging.warning(f"ZFS dataset {dataset} is still not mounted after pool import")
+            logging.warning(f"ZFS dataset {dataset} is not mounted after pool import")
 
 def run_startup_script():
     retry_operation(lambda: run_command("python3 /rontor/main/startup.py"))
     logging.info("Startup script executed")
 
+def setup_docker_bind_mount():
+    docker_dir = "/var/lib/docker"
+    zfs_docker_dir = "/rontor/docker"
+
+    # /var/lib/docker ディレクトリを作成（存在しない場合）
+    os.makedirs(docker_dir, exist_ok=True)
+
+    # バインドマウントを実行
+    run_command(f"mount --bind {zfs_docker_dir} {docker_dir}")
+
+    # /etc/fstab にバインドマウントを追加
+    with open("/etc/fstab", "a") as fstab:
+        fstab.write(f"\n{zfs_docker_dir} {docker_dir} none bind 0 0\n")
+
+    logging.info(f"Docker directory {docker_dir} bind mounted to ZFS dataset {zfs_docker_dir}")
+
+def install_docker():
+    run_command("apt install -y docker.io docker-compose-v2")
+    run_command("systemctl enable docker --now")
+    logging.info("Docker installed and enabled")
+
 def setup_system():
     run_command("apt update")
-    run_command("apt install -y zfsutils-linux docker.io docker-compose-v2 caddy python3-boto3 python3-requests zsh rclone")
+    run_command("apt install -y zfsutils-linux caddy python3-boto3 python3-requests zsh rclone")
     logging.info("System packages installed")
 
 def main():
@@ -214,6 +236,9 @@ def main():
             logging.info("Log file moved to final destination")
         else:
             logging.error(f"Temporary log file does not exist: {tmp_log_file}")
+
+        setup_docker_bind_mount()
+        install_docker()
 
         run_startup_script()
 
