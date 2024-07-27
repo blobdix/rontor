@@ -246,6 +246,26 @@ def setup_instance_store_swap():
     except Exception as e:
         logging.error(f"Unexpected error in setup_instance_store_swap: {str(e)}")
 
+def set_timezone():
+    try:
+        # タイムゾーンを Asia/Tokyo に設定
+        subprocess.run(["timedatectl", "set-timezone", "Asia/Tokyo"], check=True)
+        
+        # 設定が反映されたことを確認
+        result = subprocess.run(["timedatectl", "show", "--property=Timezone", "--value"], 
+                                check=True, capture_output=True, text=True)
+        current_timezone = result.stdout.strip()
+        
+        if current_timezone == "Asia/Tokyo":
+            logging.info("Timezone successfully set to Asia/Tokyo")
+        else:
+            logging.warning(f"Failed to set timezone. Current timezone: {current_timezone}")
+        
+        # ロギングのタイムゾーンも更新
+        logging.Formatter.converter = lambda *args: datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to set timezone: {e}")
+
 def main():
     try:
         # システムパッケージのインストール
@@ -265,6 +285,8 @@ def main():
         tmp_log_file = get_log_file_name(instance_id, '/tmp')
         setup_logging(tmp_log_file)
         logging.info("Starting user data script")
+
+        set_timezone()
 
         setup_instance_store_swap()
 
