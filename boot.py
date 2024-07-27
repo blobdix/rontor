@@ -6,6 +6,7 @@ import os
 import logging
 import shutil
 from datetime import datetime
+import pytz
 
 def get_instance_metadata(key, token):
     import requests
