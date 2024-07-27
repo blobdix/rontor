@@ -34,7 +34,7 @@ except Exception as e:
     raise
 
 # サイトの配列
-sites = ["org.alpha-carinae.mattermost"]
+sites = ["org.alpha-carinae.mattermost", "org.blobdix"]
 
 # サービスファイルをコピーする関数
 def copy_service_file():
