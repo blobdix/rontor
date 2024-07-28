@@ -344,15 +344,7 @@ def main():
         ebs_mount_point = tags.get('EBSMountPoint', '/rontor/main')
 
         ec2_client = boto3.client('ec2', region_name=region)
-
-        associate_elastic_ip(ec2_client, instance_id, elastic_ip)
         attach_ebs_volume(ec2_client, instance_id, ebs_volume_id)
-
-        ipv6_address = tags.get('IPv6Address')
-        if ipv6_address:
-            associate_ipv6_address(ec2_client, instance_id, ipv6_address)
-        else:
-            logging.warning("No IPv6 address specified in instance tags")
 
         mount_zfs_dataset()
 
@@ -374,6 +366,14 @@ def main():
 
         setup_docker_bind_mount()
         install_docker()
+
+        associate_elastic_ip(ec2_client, instance_id, elastic_ip)
+
+        ipv6_address = tags.get('IPv6Address')
+        if ipv6_address:
+            associate_ipv6_address(ec2_client, instance_id, ipv6_address)
+        else:
+            logging.warning("No IPv6 address specified in instance tags")
 
         run_startup_script()
 
