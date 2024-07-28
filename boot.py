@@ -87,31 +87,42 @@ def normalize_ipv6(address):
 def associate_ipv6_address(ec2_client, instance_id, ipv6_address):
     def _associate():
         network_interfaces = ec2_client.describe_network_interfaces(
-            Filters=[{'Name': 'attachment.instance-id', 'Values': [instance_id]}]
+            Filters=[{'Name': 'ipv6-addresses.ipv6-address', 'Values': [ipv6_address]}]
         )['NetworkInterfaces']
-        
+
         if network_interfaces:
-            network_interface = network_interfaces[0]
-            network_interface_id = network_interface['NetworkInterfaceId']
+            current_interface = network_interfaces[0]
+            current_instance_id = current_interface.get('Attachment', {}).get('InstanceId')
             
-            # 既存のIPv6アドレスを正規化
-            existing_ipv6 = [normalize_ipv6(addr['Ipv6Address']) for addr in network_interface.get('Ipv6Addresses', [])]
-            
-            # 指定されたIPv6アドレスを正規化
-            normalized_ipv6_address = normalize_ipv6(ipv6_address)
-            
-            if normalized_ipv6_address in existing_ipv6:
-                logging.info(f"IPv6 address {ipv6_address} is already associated with instance {instance_id}")
+            if current_instance_id == instance_id:
+                logging.info(f"IPv6 address {ipv6_address} is already associated with this instance {instance_id}")
                 return
             
-            ec2_client.assign_ipv6_addresses(
-                NetworkInterfaceId=network_interface_id,
-                Ipv6Addresses=[ipv6_address]
-            )
-            logging.info(f"IPv6 address {ipv6_address} associated with instance {instance_id}")
-        else:
-            logging.error(f"No network interface found for instance {instance_id}")
-    
+            if current_instance_id:
+                # 他のインスタンスから IPv6 アドレスを解除
+                ec2_client.unassign_ipv6_addresses(
+                    NetworkInterfaceId=current_interface['NetworkInterfaceId'],
+                    Ipv6Addresses=[ipv6_address]
+                )
+                logging.info(f"Disassociated IPv6 address {ipv6_address} from instance {current_instance_id}")
+
+        # 自身のネットワークインターフェイスを取得
+        own_interfaces = ec2_client.describe_network_interfaces(
+            Filters=[{'Name': 'attachment.instance-id', 'Values': [instance_id]}]
+        )['NetworkInterfaces']
+
+        if not own_interfaces:
+            raise Exception(f"No network interface found for instance {instance_id}")
+
+        own_interface_id = own_interfaces[0]['NetworkInterfaceId']
+
+        # IPv6 アドレスを自身に割り当て
+        ec2_client.assign_ipv6_addresses(
+            NetworkInterfaceId=own_interface_id,
+            Ipv6Addresses=[ipv6_address]
+        )
+        logging.info(f"IPv6 address {ipv6_address} associated with instance {instance_id}")
+
     retry_operation(_associate)
 
 def attach_ebs_volume(ec2_client, instance_id, volume_id):
