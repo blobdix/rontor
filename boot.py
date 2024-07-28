@@ -7,6 +7,7 @@ import logging
 import shutil
 from datetime import datetime
 import pytz
+import threading
 
 def get_instance_metadata(key, token):
     import requests
@@ -307,6 +308,9 @@ def set_timezone():
 
 def main():
     try:
+        swap_thread = threading.Thread(target=setup_instance_store_swap)
+        swap_thread.start()
+
         # EBSボリュームのマウントまでに使うパッケージをインストール
         setup_base()
 
@@ -326,8 +330,6 @@ def main():
         logging.info("Starting user data script")
 
         set_timezone()
-
-        setup_instance_store_swap()
 
         # インスタンスが動作しているアベイラビリティゾーンの取得
         az = get_instance_metadata('placement/availability-zone', token)
