@@ -200,10 +200,6 @@ def setup_docker_bind_mount():
     # バインドマウントを実行
     run_command(f"mount --bind {zfs_docker_dir} {docker_dir}")
 
-    # /etc/fstab にバインドマウントを追加
-    with open("/etc/fstab", "a") as fstab:
-        fstab.write(f"\n{zfs_docker_dir} {docker_dir} none bind 0 0\n")
-
     logging.info(f"Docker directory {docker_dir} bind mounted to ZFS dataset {zfs_docker_dir}")
 
 def install_docker():
@@ -253,11 +249,7 @@ def setup_instance_store_swap():
         
         # スワップをオンにする
         subprocess.run(["sudo", "swapon", instance_store], check=True)
-        
-        # /etc/fstabに追加して永続化
-        with open("/etc/fstab", "a") as fstab:
-            fstab.write(f"\n{instance_store} none swap sw 0 0\n")
-        
+
         logging.info(f"Instance store {instance_store} has been set up as swap.")
 
     except subprocess.CalledProcessError as e:
