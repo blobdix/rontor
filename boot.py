@@ -64,11 +64,19 @@ def retry_operation(operation, max_retries=3, delay=5):
 def associate_elastic_ip(ec2_client, instance_id, elastic_ip):
     def _associate():
         response = ec2_client.describe_addresses(PublicIps=[elastic_ip])
-        if 'InstanceId' not in response['Addresses'][0]:
-            ec2_client.associate_address(InstanceId=instance_id, PublicIp=elastic_ip)
-            logging.info(f"Elastic IP {elastic_ip} associated with instance {instance_id}")
-        else:
-            logging.info(f"Elastic IP {elastic_ip} is already associated with an instance")
+        current_instance_id = response['Addresses'][0].get('InstanceId')
+
+        if current_instance_id == instance_id:
+            logging.info(f"Elastic IP {elastic_ip} is already associated with this instance {instance_id}")
+            return
+
+        if current_instance_id:
+            ec2_client.disassociate_address(PublicIp=elastic_ip)
+            logging.info(f"Disassociated Elastic IP {elastic_ip} from instance {current_instance_id}")
+
+        ec2_client.associate_address(InstanceId=instance_id, PublicIp=elastic_ip)
+        logging.info(f"Elastic IP {elastic_ip} associated with instance {instance_id}")
+
     retry_operation(_associate)
 
 import ipaddress
