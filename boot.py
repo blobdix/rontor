@@ -218,10 +218,27 @@ def install_docker():
     run_command("systemctl enable docker --now")
     logging.info("Docker installed and enabled")
 
+def setup_apt_cache_bind_mount():
+    apt_cache_dir = "/var/cache/apt"
+    zfs_apt_cache_dir = "/rontor/apt-cache"
+
+    # /rontor/apt-cache ディレクトリを作成（存在しない場合）
+    os.makedirs(zfs_apt_cache_dir, exist_ok=True)
+
+    # バインドマウントを実行
+    run_command(f"mount --bind {zfs_apt_cache_dir} {apt_cache_dir}")
+
+    logging.info(f"APT cache directory {apt_cache_dir} bind mounted to ZFS dataset {zfs_apt_cache_dir}")
+
+def setup_base():
+    run_command("apt update")
+    run_command("apt install -y zfsutils-linux python3-boto3 python3-requests")
+    logging.info("Base packages installed")
+
 def setup_system():
     run_command("apt update")
-    run_command("apt install -y zfsutils-linux caddy python3-boto3 python3-requests zsh rclone")
-    logging.info("System packages installed")
+    run_command("apt install -y caddy zsh rclone")
+    logging.info("Additional packages installed")
 
 def is_disk_initialized(device):
     try:
@@ -290,8 +307,8 @@ def set_timezone():
 
 def main():
     try:
-        # システムパッケージのインストール
-        setup_system()
+        # EBSボリュームのマウントまでに使うパッケージをインストール
+        setup_base()
 
         # boto3のインポート（パッケージのインストール後）
         import boto3
@@ -336,6 +353,10 @@ def main():
             logging.warning("No IPv6 address specified in instance tags")
 
         mount_zfs_dataset()
+
+        setup_apt_cache_bind_mount()
+
+        setup_system()
 
         # ログファイルのフラッシュと移動
         for handler in logging.getLogger().handlers:
