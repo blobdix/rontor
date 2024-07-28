@@ -28,7 +28,7 @@ except IOError as e:
 # Caddyサービスを有効化して起動
 try:
     run_command("systemctl enable caddy")
-    run_command("systemctl restart caddy")
+    run_command("systemctl reload-or-restart caddy")
 except Exception as e:
     logging.error(f"Failed to enable and start Caddy service: {str(e)}")
     raise
