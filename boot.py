@@ -116,12 +116,22 @@ def associate_ipv6_address(ec2_client, instance_id, ipv6_address):
 
 def attach_ebs_volume(ec2_client, instance_id, volume_id):
     def _attach():
-        response = ec2_client.describe_volumes(VolumeIds=[volume_id])
-        if not response['Volumes'][0]['Attachments']:
-            ec2_client.attach_volume(VolumeId=volume_id, InstanceId=instance_id, Device='/dev/sdf')
-            logging.info(f"EBS volume {volume_id} attached to instance {instance_id}")
-        else:
-            logging.info(f"EBS volume {volume_id} is already attached to an instance")
+        while True:
+            response = ec2_client.describe_volumes(VolumeIds=[volume_id])
+            attachments = response['Volumes'][0]['Attachments']
+
+            if not attachments:
+                ec2_client.attach_volume(VolumeId=volume_id, InstanceId=instance_id, Device='/dev/sdf')
+                logging.info(f"EBS volume {volume_id} attached to instance {instance_id}")
+                return
+
+            if attachments[0]['InstanceId'] == instance_id:
+                logging.info(f"EBS volume {volume_id} is already attached to this instance {instance_id}")
+                return
+
+            logging.info(f"EBS volume {volume_id} is attached to another instance. Waiting...")
+            time.sleep(1)
+
     retry_operation(_attach)
 
 def get_token():
